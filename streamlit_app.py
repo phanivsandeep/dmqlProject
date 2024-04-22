@@ -1,0 +1,1 @@
+print("Welcome to DMQL project wiht streamlit")
