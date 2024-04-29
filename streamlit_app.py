@@ -31,7 +31,8 @@ def fetch_records(table_name, limit=10):
             cursor = conn.cursor()
             cursor.execute(f"SELECT * FROM \"{table_name}\" LIMIT {limit};")
             records = cursor.fetchall()
-            return records
+            column_names = [desc[0] for desc in cursor.description]
+            return column_names,records
         except Exception as e:
             st.error(f"Error fetching records: {e}")
         finally:
@@ -66,16 +67,30 @@ def fetch_table_schema(table_name):
         finally:
             if conn is not None:
                 conn.close()
+def run_custom_query(query):
+    conn = create_connection()
+    if conn is not None:
+        try:
+            cursor = conn.cursor()
+            cursor.execute(query)
+            records = cursor.fetchall()
+            column_names = [desc[0] for desc in cursor.description]
+            return column_names, records
+        except Exception as e:
+            st.error(f"Error executing query: {e}")
+        finally:
+            if conn is not None:
+                conn.close()
 
 def main():
     st.title("DMQL project by team SQL United\n")
     st.subheader("Team members:")
     st.text("Phani Visweswara Sandeep Chodavarapu, phanivis\nLikhit Sastry Juttada, likhitsa\nLokesh Konjeti, lokeshko")
-    nav_option = st.sidebar.selectbox("Navigation", ["Desc Tables", "Fetch Records"])
+    nav_option = st.sidebar.selectbox("Navigation", ["Desc Tables", "Fetch Records","Run Custom Query"])
 
     if nav_option == "Desc Tables":
         st.header("Table Schema Explorer")
-        st.markdown("Please select a table from the radio buttons in the left side bar")
+        st.markdown(":gray[Please select a table from the radio buttons in the left side bar]")
         tables = fetch_table_names()
         if tables:
             st.sidebar.title("Tables")
@@ -102,14 +117,32 @@ def main():
             if selected_table:
                 st.sidebar.write(f"Selected Table: {selected_table}")
                 limit = st.sidebar.number_input("Limit", min_value=1, max_value=100, value=10)
-                records = fetch_records(selected_table, limit)
+                column_names, records = fetch_records(selected_table, limit)
                 if records:
                     st.title(f"Records from Table: {selected_table}")
-                    st.table(records)
+                    records_with_columns = [column_names] + list(records)
+                    st.table(records_with_columns)
                 else:
                     st.warning(f"No records found for table: {selected_table}")
         else:
-            st.error("No tables found in the database.")            
-
+            st.error("No tables found in the database.")    
+    elif nav_option == "Run Custom Query":
+        #RUn custom query on the database
+        st.header("Run Custom Query")
+        st.markdown(":gray[Enter your custom SQL query below and click the 'Run Query' button.]")
+        query = st.text_area("Enter SQL Query here")
+        if st.button("Run Query"):
+            if "select" not in query.lower():
+                st.warning("Only 'Select' queries can be performed on this database by users other than admin.")
+            else:
+                if query:
+                    column_names, results = run_custom_query(query)
+                    if results:
+                        results_with_columns = [column_names] + list(results)
+                        st.table(results_with_columns)
+                    else:
+                        st.warning("No results returned for the query.")
+                else:
+                    st.warning("Please enter a valid SQL query.")
 if __name__ == "__main__":
     main()
