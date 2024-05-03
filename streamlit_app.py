@@ -2,7 +2,7 @@ import streamlit as st
 import psycopg2
 
 # Database credentials
-endpoint_aws = "dmql.cngs4yo0u45h.us-east-2.rds.amazonaws.com"
+endpoint_aws = "dmqlproject.cxiqiss08ndb.us-east-2.rds.amazonaws.com"
 port_num = "5432"
 username = "postgres"
 password = "postgres"
